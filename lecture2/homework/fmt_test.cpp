@@ -9,6 +9,8 @@ int main()
     //format
     std::string str = fmt::format("{1},{0}!", "World", "Hello");
     fmt::print("{}\n", str);
+    //example
+    fmt::print("Слава Україні!");
 
     return 0;
 }
