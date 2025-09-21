@@ -1,0 +1,4 @@
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build/CMakeFiles/fmt_test.dir
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build/CMakeFiles/resize_image.dir
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build/CMakeFiles/edit_cache.dir
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build/CMakeFiles/rebuild_cache.dir

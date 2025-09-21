@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build",
+  "command": "/usr/bin/g++ -DFMT_LOCALE -DFMT_SHARED -I/usr/include/opencv4 -I/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework -g -o CMakeFiles/fmt_test.dir/homework/fmt_test.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/fmt_test.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/fmt_test.cpp"
+},
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build",
+  "command": "/usr/bin/g++ -DFMT_LOCALE -DFMT_SHARED -I/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework -isystem /usr/include/opencv4 -g -o CMakeFiles/resize_image.dir/homework/main.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/main.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/main.cpp"
+},
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/build",
+  "command": "/usr/bin/g++ -DFMT_LOCALE -DFMT_SHARED -I/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework -isystem /usr/include/opencv4 -g -o CMakeFiles/resize_image.dir/homework/tools.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/tools.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture2/homework/tools.cpp"
+}
+]
