@@ -19,8 +19,6 @@ public:
 
   std::list<Armor> detect(const cv::Mat & bgr_img, int frame_count) override;
 
-  std::list<Armor> postprocess(
-    double scale, cv::Mat & output, const cv::Mat & bgr_img, int frame_count) override;
 
 private:
   std::string device_, model_path_;

@@ -8,8 +8,6 @@ add_library(auto_aim OBJECT
     armor.cpp
     yolo.cpp
     yolos/yolov5.cpp
-    yolos/yolov8.cpp
-    yolos/yolo11.cpp
 )
 
 target_link_libraries(auto_aim io openvino::runtime )

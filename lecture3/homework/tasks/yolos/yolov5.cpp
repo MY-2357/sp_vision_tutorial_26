@@ -180,6 +180,8 @@ std::list<Armor> YOLOV5::parse(
       it = armors.erase(it);
       continue;
     }
+    // 使用传统方法二次矫正角点
+    // if (use_traditional_) detector_.detect(*it, bgr_img);
 
     it->center_norm = get_center_norm(bgr_img, it->center);
     ++it;
@@ -238,8 +240,8 @@ void YOLOV5::draw_detections(
     cv::Scalar green(0, 255, 0);
     cv::rectangle(detection, roi_, green, 2);
   }
-  cv::resize(detection, detection, {}, 0.5, 0.5);  // 显示时缩小图片尺寸
-  cv::imshow("detection", detection);
+  // cv::resize(detection, detection, {}, 0.5, 0.5);  // 显示时缩小图片尺寸
+  // cv::imshow("detection", detection);
 }
 
 void YOLOV5::save(const Armor & armor) const
@@ -255,12 +257,6 @@ double YOLOV5::sigmoid(double x)
     return 1.0 / (1.0 + exp(-x));
   else
     return exp(x) / (1.0 + exp(x));
-}
-
-std::list<Armor> YOLOV5::postprocess(
-  double scale, cv::Mat & output, const cv::Mat & bgr_img, int frame_count)
-{
-  return parse(scale, output, bgr_img, frame_count);
 }
 
 }  // namespace auto_aim
