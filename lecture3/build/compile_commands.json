@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/build",
+  "command": "/usr/bin/g++ -DOV_THREAD=OV_THREAD_TBB -D_GLIBCXX_USE_CXX11_ABI=1 -isystem /opt/intel/openvino_2024.6.0/runtime/include -g -Wno-error=deprecated-declarations -o CMakeFiles/auto_aim.dir/armor.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/armor.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/armor.cpp"
+},
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/build",
+  "command": "/usr/bin/g++ -DOV_THREAD=OV_THREAD_TBB -D_GLIBCXX_USE_CXX11_ABI=1 -isystem /opt/intel/openvino_2024.6.0/runtime/include -g -Wno-error=deprecated-declarations -o CMakeFiles/auto_aim.dir/yolo.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/yolo.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/yolo.cpp"
+},
+{
+  "directory": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/build",
+  "command": "/usr/bin/g++ -DOV_THREAD=OV_THREAD_TBB -D_GLIBCXX_USE_CXX11_ABI=1 -isystem /opt/intel/openvino_2024.6.0/runtime/include -g -Wno-error=deprecated-declarations -o CMakeFiles/auto_aim.dir/yolos/yolov5.cpp.o -c /home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/yolos/yolov5.cpp",
+  "file": "/home/zmy/Desktop/sp_vision_tutorial_26/lecture3/homework/tasks/yolos/yolov5.cpp"
+}
+]
