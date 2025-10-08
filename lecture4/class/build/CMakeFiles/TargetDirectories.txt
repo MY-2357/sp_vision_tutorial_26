@@ -1,0 +1,3 @@
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture4/class/build/CMakeFiles/main.dir
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture4/class/build/CMakeFiles/edit_cache.dir
+/home/zmy/Desktop/sp_vision_tutorial_26/lecture4/class/build/CMakeFiles/rebuild_cache.dir

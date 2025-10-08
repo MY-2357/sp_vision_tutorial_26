@@ -36,29 +36,16 @@ myCamera::myCamera()
     MV_CC_SetEnumValue(m_handle_, "BalanceWhiteAuto", MV_BALANCEWHITE_AUTO_CONTINUOUS);
     MV_CC_SetEnumValue(m_handle_, "ExposureAuto", MV_EXPOSURE_AUTO_MODE_OFF);
     MV_CC_SetEnumValue(m_handle_, "GainAuto", MV_GAIN_MODE_OFF);
-    MV_CC_SetFloatValue(m_handle_, "ExposureTime", 10000);
+    MV_CC_SetFloatValue(m_handle_, "ExposureTime", 1000);
     MV_CC_SetFloatValue(m_handle_, "Gain", 20);
     MV_CC_SetFrameRate(m_handle_, 60);
 
-    //开始采集数据
-    ret = MV_CC_StartGrabbing(m_handle_);
-    if (ret != MV_OK) 
-    {
-        std::cout << " Camera start grabbing failed." << std::endl;
-        return;
-    }
+
 }
 
 myCamera::~myCamera()
 {
     int ret;
-
-    ret = MV_CC_StopGrabbing(m_handle_);
-    if (ret != MV_OK)
-    {
-        std::cout << "Error occurred when stop grabbing." << std::endl;
-    }
-
 
     ret = MV_CC_CloseDevice(m_handle_);
     if (ret != MV_OK)
@@ -76,6 +63,14 @@ myCamera::~myCamera()
 
 bool myCamera::read(cv::Mat &img)
 {
+    //开始采集数据
+    int ret = MV_CC_StartGrabbing(m_handle_);
+    if (ret != MV_OK) 
+    {
+        std::cout << " Camera start grabbing failed." << std::endl;
+        return false; 
+    }
+
     if(!m_handle_)
     {
         std::cout<< "Camera handle is null." << std::endl;
@@ -85,7 +80,7 @@ bool myCamera::read(cv::Mat &img)
     MV_FRAME_OUT raw;
     unsigned int nMsec = 100;
 
-    int ret = MV_CC_GetImageBuffer(m_handle_, &raw, nMsec);
+    ret = MV_CC_GetImageBuffer(m_handle_, &raw, nMsec);
     if (ret != MV_OK)
     {
         std::cout << "Error occurred when get image buffer." << std::endl;
@@ -100,6 +95,12 @@ bool myCamera::read(cv::Mat &img)
     {
         std::cout<< "Error occurred when free image buffer." << std::endl;
         return false;
+    }
+
+    ret = MV_CC_StopGrabbing(m_handle_);
+    if (ret != MV_OK)
+    {
+        std::cout << "Error occurred when stop grabbing." << std::endl;
     }
 
     return true;
