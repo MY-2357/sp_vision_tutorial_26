@@ -12,13 +12,13 @@ int main()
     // 下面的代码调试用
     cv::VideoCapture cap("assets/test.avi");
 
-    // if (!cap.isOpened())
-    // {
-    //     std::cerr << "无法打开视频文件!" << std::endl;
-    //     return -1;
-    // }
+    if (!cap.isOpened())
+    {
+        std::cerr << "无法打开视频文件!" << std::endl;
+        return -1;
+    }
 
-    io::Camera camera(2.5, 16.9, "2bdf:0001");
+    // io::Camera camera(2.5, 16.9, "2bdf:0001");
     std::chrono::steady_clock::time_point timestamp;
     auto_buff::Buff_Detector detector;
     tools::Plotter plotter;
@@ -28,16 +28,16 @@ int main()
     {
         cv::Mat img;
         // 下面的代码调试用
-        // cap >> img;
-        // if (img.empty())
-        // {
-        //     std::cout << "视频播放完毕或无法读取帧" << std::endl;
-        //     break;
-        // }
-        // auto fanblades = detector.detect(img);
-
-        camera.read(img, timestamp);
+        cap >> img;
+        if (img.empty())
+        {
+            std::cout << "视频播放完毕或无法读取帧" << std::endl;
+            break;
+        }
         auto fanblades = detector.detect(img);
+
+        // camera.read(img, timestamp);
+        // auto fanblades = detector.detect(img);
 
         // plotjuggler的data的定义提前
         nlohmann::json data;
@@ -158,7 +158,7 @@ int main()
             cv::projectPoints(pts3d, cv::Mat::zeros(3, 1, CV_64F), cv::Mat::zeros(3, 1, CV_64F), camera_matrix, distort_coeffs, pts2d);
 
             // 绘制
-         //   cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
+            //   cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
 
             nlohmann::json data;
             data["symbol_center_x"] = symbol_center.x;
