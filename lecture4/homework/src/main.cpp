@@ -158,7 +158,7 @@ int main()
             cv::projectPoints(pts3d, cv::Mat::zeros(3, 1, CV_64F), cv::Mat::zeros(3, 1, CV_64F), camera_matrix, distort_coeffs, pts2d);
 
             // 绘制
-            cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
+         //   cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
 
             nlohmann::json data;
             data["symbol_center_x"] = symbol_center.x;
