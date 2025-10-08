@@ -1217,14 +1217,7 @@ tasks/CMakeFiles/auto_buff.dir/buff_solver.cpp.o: ../tasks/buff_solver.cpp \
   /usr/include/opencv4/opencv2/stitching/detail/camera.hpp \
   /usr/include/opencv4/opencv2/video.hpp \
   /usr/include/opencv4/opencv2/video/tracking.hpp \
-  /usr/include/opencv4/opencv2/video/background_segm.hpp \
-  /usr/include/c++/11/random \
-  /usr/include/c++/11/bits/random.h \
-  /usr/include/x86_64-linux-gnu/c++/11/bits/opt_random.h \
-  /usr/include/c++/11/bits/random.tcc \
-  /usr/include/c++/11/numeric \
-  /usr/include/c++/11/bits/stl_numeric.h \
-  /usr/include/c++/11/pstl/glue_numeric_defs.h
+  /usr/include/opencv4/opencv2/video/background_segm.hpp
 
 tasks/CMakeFiles/auto_buff.dir/buff_type.cpp.o: ../tasks/buff_type.cpp \
   /usr/include/stdc-predef.h \

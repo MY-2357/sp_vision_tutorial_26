@@ -12,52 +12,32 @@ int main()
     // 下面的代码调试用
     cv::VideoCapture cap("assets/test.avi");
 
-    if (!cap.isOpened())
-    {
-        std::cerr << "无法打开视频文件!" << std::endl;
-        return -1;
-    }
+    // if (!cap.isOpened())
+    // {
+    //     std::cerr << "无法打开视频文件!" << std::endl;
+    //     return -1;
+    // }
 
-    /* io::Camera camera(2.5, 16.9, "2bdf:0001");*/
+    io::Camera camera(2.5, 16.9, "2bdf:0001");
     std::chrono::steady_clock::time_point timestamp;
     auto_buff::Buff_Detector detector;
     tools::Plotter plotter;
-    // 自定义参数创建求解器实例
-    size_t window_size = 120;        // 使用最近的120个点进行计算
-    int ransac_iterations = 150;     // RANSAC迭代150次
-    double ransac_threshold = 25; // RANSAC内点阈值为2.5厘米
-    double alpha = 0.25;             // 平滑系数
-    double motion_threshold = 2.2;   // 相机运动检测阈值（半径的2.2倍）
-    size_t motion_frames = 4;        // 连续4帧超过阈值则判定为运动
 
-    auto_buff::Buff_Solver solver(
-        window_size,
-        ransac_iterations,
-        ransac_threshold,
-        alpha,
-        motion_threshold,
-        motion_frames);
-
-    cv::Mat current_rvec, current_tvec; // 新增：存储当前扇叶的位姿
-
+    auto_buff::Buff_Solver solver;
     while (true)
     {
         cv::Mat img;
         // 下面的代码调试用
-        cap >> img;
+        // cap >> img;
+        // if (img.empty())
+        // {
+        //     std::cout << "视频播放完毕或无法读取帧" << std::endl;
+        //     break;
+        // }
+        // auto fanblades = detector.detect(img);
 
-        if (img.empty())
-        {
-            std::cout << "视频播放完毕或无法读取帧" << std::endl;
-            break;
-        }
-
-        auto fanblades = detector.detect(img);
-
-        /*
         camera.read(img, timestamp);
         auto fanblades = detector.detect(img);
-        */
 
         // plotjuggler的data的定义提前
         nlohmann::json data;
@@ -124,23 +104,15 @@ int main()
                 std::string fanblade_center_y_index = "fanblade_" + std::to_string(count) + "_c_y";
                 std::string fanblade_center_z_index = "fanblade_" + std::to_string(count) + "_c_z";
 
-                // 单位转换：mm → m（关键修改1）
-                double cx_m = tvec.at<double>(0) / 1000.0;
-                double cy_m = tvec.at<double>(1) / 1000.0;
-                double cz_m = tvec.at<double>(2) / 1000.0;
-
-                data[fanblade_center_x_index] = cx_m;
-                data[fanblade_center_y_index] = cy_m;
-                data[fanblade_center_z_index] = cz_m;
+                data[fanblade_center_x_index] = tvec.at<double>(0);
+                data[fanblade_center_y_index] = tvec.at<double>(1);
+                data[fanblade_center_z_index] = tvec.at<double>(2);
 
                 if (count == 0)
                 {
-                    real_fanblade_c_point.x = cx_m; // 米单位
-                    real_fanblade_c_point.y = cy_m;
-                    real_fanblade_c_point.z = cz_m;
-                    // 保存当前扇叶的rvec和tvec，用于后续投影（关键修改3）
-                    current_rvec = rvec.clone();
-                    current_tvec = tvec.clone();
+                    real_fanblade_c_point.x = tvec.at<double>(0);
+                    real_fanblade_c_point.y = tvec.at<double>(1);
+                    real_fanblade_c_point.z = tvec.at<double>(2);
                 }
             }
 
@@ -173,50 +145,25 @@ int main()
         //     plotter.plot(data);
         // }
 
-        bool was_reset = false;
         if (!fanblades.empty())
         {
-            was_reset = solver.input(real_fanblade_c_point);
-        }
-        else
-        {
-            std::cout << "Warning: No fanblade detected, skip input to solver." << std::endl;
-            // 可选：若连续多帧未检测到，可手动重置solver
-            // static int no_detect_count = 0;
-            // if (++no_detect_count > 20) { solver.reset(); no_detect_count = 0; }
-        }
 
-        if (was_reset)
-        {
-            std::cout << "Solver was reset due to camera movement. Re-learning..." << std::endl;
-        }
+            // a. 获取估计的中心点
+            cv::Point3f symbol_center = real_fanblade_c_point;                  // solvePnP得到的3D坐标
+            cv::Point3f rotation_center = solver.updateAndSolve(symbol_center); // 调用solver得到的2D坐标
 
-        if (!fanblades.empty() && solver.isInitialized())
-        {
-            // a. 获取估计的中心点（米单位）
-            cv::Point3f rotation_center = solver.getEstimatedCenter();
-
-            // b. 3D旋转中心投影到图像平面（关键修改3：使用真实位姿）
+            // 投影到图像平面
             std::vector<cv::Point3f> pts3d = {rotation_center};
             std::vector<cv::Point2f> pts2d;
-            // 注意：rotation_center是米单位，需转换为毫米（与buff_object_points一致）
-            pts3d[0].x *= 1000.0;
-            pts3d[0].y *= 1000.0;
-            pts3d[0].z *= 1000.0;
-            // 传入当前扇叶的rvec和tvec，而非零矩阵
-            cv::projectPoints(pts3d, current_rvec, current_tvec, camera_matrix, distort_coeffs, pts2d);
+            cv::projectPoints(pts3d, cv::Mat::zeros(3, 1, CV_64F), cv::Mat::zeros(3, 1, CV_64F), camera_matrix, distort_coeffs, pts2d);
 
-            // c. 绘制旋转中心（半径用估计的半径，单位转换为像素时需注意，此处简化）
+            // 绘制
             cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
-            cv::putText(display_img, "Rotation Center",
-                        cv::Point(pts2d[0].x + 10, pts2d[0].y - 10),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 0), 1);
 
-            // d. PlotJuggler输出（单位统一为米）
             nlohmann::json data;
-            data["symbol_center_x"] = real_fanblade_c_point.x;
-            data["symbol_center_y"] = real_fanblade_c_point.y;
-            data["symbol_center_z"] = real_fanblade_c_point.z;
+            data["symbol_center_x"] = symbol_center.x;
+            data["symbol_center_y"] = symbol_center.y;
+            data["symbol_center_z"] = symbol_center.z;
             data["rotation_center_x"] = rotation_center.x;
             data["rotation_center_y"] = rotation_center.y;
             data["rotation_center_z"] = rotation_center.z;
