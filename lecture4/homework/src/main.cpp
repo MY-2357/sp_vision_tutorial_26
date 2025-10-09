@@ -8,7 +8,6 @@
 #include "tools/img_tools.hpp"
 #include "fmt/core.h"
 
-
 int main()
 {
 
@@ -25,8 +24,6 @@ int main()
     std::chrono::steady_clock::time_point timestamp;
     auto_buff::Buff_Detector detector;
     tools::Plotter plotter;
-
-    auto_buff::Buff_Solver solver;
     while (true)
     {
         cv::Mat img;
@@ -47,8 +44,6 @@ int main()
 
         // 当前扇叶编号的累计计数
         int count = 0;
-        // 解算后的扇叶中心坐标(为了简单，我们只用第一个扇叶的位姿)
-        cv::Point3f real_fanblade_c_point;
 
         cv::Mat display_img = img.clone();
         for (const auto &fanblade : fanblades)
@@ -103,6 +98,15 @@ int main()
             tools::draw_text(display_img, fmt::format("tvec:  x{: .2f} y{: .2f} z{: .2f}", tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2)), cv::Point2f(10, 60), 1.7, cv::Scalar(0, 255, 255), 3);
             tools::draw_text(display_img, fmt::format("rvec:  x{: .2f} y{: .2f} z{: .2f}", rvec.at<double>(0), rvec.at<double>(1), rvec.at<double>(2)), cv::Point2f(10, 120), 1.7, cv::Scalar(0, 255, 255), 3);
 
+            cv::Mat rmat;
+            cv::Rodrigues(rvec, rmat);
+            double yaw = atan2(rmat.at<double>(0, 2), rmat.at<double>(2, 2));
+            double pitch = -asin(rmat.at<double>(1, 2));
+            double roll = atan2(rmat.at<double>(1, 0), rmat.at<double>(1, 1));
+            tools::draw_text(display_img, fmt::format("yaw:   {:.2f}", yaw * 180 / 3.1415926), cv::Point2f(10, 180), 1.7, cv::Scalar(0, 255, 255), 3);
+            tools::draw_text(display_img, fmt::format("pitch: {:.2f}", pitch * 180 / 3.1415926), cv::Point2f(10, 240), 1.7, cv::Scalar(0, 255, 255), 3);
+            tools::draw_text(display_img, fmt::format("roll:  {:.2f}", roll * 180 / 3.1415926), cv::Point2f(10, 300), 1.7, cv::Scalar(0, 255, 255), 3);
+
             // 添加每一个扇叶中心的数据
             if (fanblades.size())
             {
@@ -114,76 +118,19 @@ int main()
                 data[fanblade_center_y_index] = tvec.at<double>(1);
                 data[fanblade_center_z_index] = tvec.at<double>(2);
 
-                if (count == 0)
-                {
-                    real_fanblade_c_point.x = tvec.at<double>(0);
-                    real_fanblade_c_point.y = tvec.at<double>(1);
-                    real_fanblade_c_point.z = tvec.at<double>(2);
-                }
+                cv::Point3f rotation_C;
+
+                auto_buff::calculateRotationCenter(rvec, tvec,rotation_C);
+                tools::draw_text(display_img, fmt::format("rotation_C:  x{: .2f} y{: .2f} z{: .2f}", rotation_C.x, rotation_C.y, rotation_C.z), cv::Point2f(10, 360), 1.7, cv::Scalar(0, 255, 255), 3);
+                data["rotation_C_x"]=rotation_C.x;
+                data["rotation_C_y"]=rotation_C.y;
+                data["rotation_C_z"]=rotation_C.z;
             }
 
             count++;
         }
 
         plotter.plot(data);
-
-        // 下面是gpt对于计算旋转中心的代码
-        // if (!fanblades.empty())
-        // {
-        //     // 符中心
-        //     cv::Point2f symbol_center = real_fanblade_c_point;
-
-        //     // 调用 solver 得到旋转中心
-        //     cv::Point2f rotation_center = solver.updateAndSolve(symbol_center);
-
-        //     // 绘制
-        //     cv::circle(display_img, rotation_center, 8, cv::Scalar(255, 255, 0), -1);
-        //     cv::putText(display_img, "CENTER",
-        //                 cv::Point(rotation_center.x + 10, rotation_center.y - 10),
-        //                 cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 0), 1);
-
-        //     // PlotJuggler 输出
-        //     nlohmann::json data;
-        //     data["symbol_center_x"] = symbol_center.x;
-        //     data["symbol_center_y"] = symbol_center.y;
-        //     data["rotation_center_x"] = rotation_center.x;
-        //     data["rotation_center_y"] = rotation_center.y;
-        //     plotter.plot(data);
-        // }
-
-        if (!fanblades.empty())
-        {
-
-            // a. 获取估计的中心点
-            cv::Point3f symbol_center = real_fanblade_c_point;                  // solvePnP得到的3D坐标
-            cv::Point3f rotation_center = solver.updateAndSolve(symbol_center); // 调用solver得到的2D坐标
-
-            // 投影到图像平面
-            std::vector<cv::Point3f> pts3d = {rotation_center};
-            std::vector<cv::Point2f> pts2d;
-            cv::projectPoints(pts3d, cv::Mat::zeros(3, 1, CV_64F), cv::Mat::zeros(3, 1, CV_64F), camera_matrix, distort_coeffs, pts2d);
-
-            // 绘制
-            //   cv::circle(display_img, pts2d[0], 8, cv::Scalar(255, 255, 0), -1);
-
-            nlohmann::json data;
-            data["symbol_center_x"] = symbol_center.x;
-            data["symbol_center_y"] = symbol_center.y;
-            data["symbol_center_z"] = symbol_center.z;
-            data["rotation_center_x"] = rotation_center.x;
-            data["rotation_center_y"] = rotation_center.y;
-            data["rotation_center_z"] = rotation_center.z;
-            plotter.plot(data);
-        }
-        // 上面是gpt对于计算旋转中心的代码
-
-        // plotjuggler
-
-        // if (fanblades.size())
-        // {
-        //     // TODO
-        // }
-        // plotter.plot(data);
 
         // 显示检测结果
         cv::resize(display_img, display_img, {}, 0.8, 0.8);
