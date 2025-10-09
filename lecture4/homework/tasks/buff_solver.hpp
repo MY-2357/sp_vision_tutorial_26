@@ -1,15 +1,8 @@
-// #ifndef AUTO_BUFF__SOLVER_HPP
-// #define AUTO_BUFF__SOLVER_HPP
-
-// namespace auto_buff
-// {
-// class Buff_Solver
-// {
-// public:
-//     void solvePnP();
-// };
-// }  // namespace auto_buff
-// #endif  // SOLVER_HPP
+/* 修改说明：
+1、更改坐标系x,y轴方向
+2、取消使用最小二乘法求解PnP，改为利用tvec和rvec直接解算
+3、当前状态：未完成
+*/
 
 #ifndef AUTO_BUFF__SOLVER_HPP
 #define AUTO_BUFF__SOLVER_HPP
@@ -32,12 +25,13 @@ static const cv::Mat distort_coeffs =
 
 // 六个关键点的坐标（以旋转中心为坐标原点，并认为扇叶垂直向上）
 /*
-           ^ y
+           
            |
            |
 -----------+-------->x
            |
            |
+           y
 单位:mm
 
 */
@@ -65,27 +59,7 @@ namespace auto_buff
 {
 
     void solvePnP(cv::InputArray &imagePoints, cv::OutputArray rvec, cv::OutputArray tvec);
-    class Buff_Solver
-    {
-    public:
-        Buff_Solver(int max_points = 30);
 
-
-        cv::Point3f updateAndSolve(const cv::Point3f &symbol_center);
-
-    private:
-        bool fitCircle3D(const std::vector<cv::Point3f> &points, cv::Point3f &center, float &radius);
-
-        int max_points_;
-        std::vector<cv::Point3f> history_points;
-
-        // 相机内参（需外部赋值）
-        cv::Mat camera_matrix;
-        cv::Mat distort_coeffs;
-
-        // 能量机关几何参数（3D 模型点）
-        std::vector<cv::Point3f> buff_object_points;
-    };
 
 } // namespace auto_buff
 
