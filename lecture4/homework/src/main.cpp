@@ -5,6 +5,9 @@
 #include <nlohmann/json.hpp>
 #include "tools/plotter.hpp"
 #include "tasks/buff_solver.hpp"
+#include "tools/img_tools.hpp"
+#include "fmt/core.h"
+
 
 int main()
 {
@@ -96,6 +99,9 @@ int main()
             cv::Mat rvec, tvec;
 
             auto_buff::solvePnP(imagePoints, rvec, tvec);
+
+            tools::draw_text(display_img, fmt::format("tvec:  x{: .2f} y{: .2f} z{: .2f}", tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2)), cv::Point2f(10, 60), 1.7, cv::Scalar(0, 255, 255), 3);
+            tools::draw_text(display_img, fmt::format("rvec:  x{: .2f} y{: .2f} z{: .2f}", rvec.at<double>(0), rvec.at<double>(1), rvec.at<double>(2)), cv::Point2f(10, 120), 1.7, cv::Scalar(0, 255, 255), 3);
 
             // 添加每一个扇叶中心的数据
             if (fanblades.size())
