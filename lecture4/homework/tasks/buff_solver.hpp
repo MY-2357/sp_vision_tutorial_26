@@ -1,7 +1,7 @@
 /* 修改说明：
 1、更改坐标系x,y轴方向
 2、取消使用最小二乘法求解PnP，改为利用tvec和rvec直接解算
-3、当前状态：未完成
+3、当前状态：完成
 */
 
 #ifndef AUTO_BUFF__SOLVER_HPP

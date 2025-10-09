@@ -18,7 +18,7 @@ namespace auto_buff
         cv::Rodrigues(rvec, rmat);
         // double yaw = atan2(rmat.at<double>(0, 2), rmat.at<double>(2, 2));
         // double pitch = -asin(rmat.at<double>(1, 2));
-        // 我们只考虑roll,不计算别的。由于开始是设置为扇叶垂直向上，因此roll的处理被稍微复杂化了，顺时针为正，逆时针为负，极轴在y上。如同:
+        // 我们只考虑roll,不计算别的。由于开始是设置为扇叶垂直向上，因此roll的处理被稍微复杂化了，顺时针为正，逆时针为负，极轴在y上。如图:
         /*
                 ^
             -   |   +
