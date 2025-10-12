@@ -79,6 +79,7 @@ int main(int argc, char * argv[])
 
     /*
       注意：可能需要一些格式的调整，以及注意之后添加错误处理
+      没有使用tools/math_tools.hpp"，肯定在那个地方出了问题
     */
 
     // 打开相机并读取图像
