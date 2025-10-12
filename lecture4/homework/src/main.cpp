@@ -12,15 +12,15 @@ int main()
 {
 
     // 下面的代码调试用
-    cv::VideoCapture cap("assets/test.avi");
+    // cv::VideoCapture cap("assets/test.avi");
 
-    if (!cap.isOpened())
-    {
-        std::cerr << "无法打开视频文件!" << std::endl;
-        return -1;
-    }
+    // if (!cap.isOpened())
+    // {
+    //     std::cerr << "无法打开视频文件!" << std::endl;
+    //     return -1;
+    // }
 
-    // io::Camera camera(2.5, 16.9, "2bdf:0001");
+    io::Camera camera(2.5, 16.9, "2bdf:0001");
     std::chrono::steady_clock::time_point timestamp;
     auto_buff::Buff_Detector detector;
     tools::Plotter plotter;
@@ -28,16 +28,16 @@ int main()
     {
         cv::Mat img;
         // 下面的代码调试用
-        cap >> img;
-        if (img.empty())
-        {
-            std::cout << "视频播放完毕或无法读取帧" << std::endl;
-            break;
-        }
-        auto fanblades = detector.detect(img);
-
-        // camera.read(img, timestamp);
+        // cap >> img;
+        // if (img.empty())
+        // {
+        //     std::cout << "视频播放完毕或无法读取帧" << std::endl;
+        //     break;
+        // }
         // auto fanblades = detector.detect(img);
+
+        camera.read(img, timestamp);
+        auto fanblades = detector.detect(img);
 
         // plotjuggler的data的定义提前
         nlohmann::json data;
@@ -95,17 +95,17 @@ int main()
 
             auto_buff::solvePnP(imagePoints, rvec, tvec);
 
-            tools::draw_text(display_img, fmt::format("tvec:  x{: .2f} y{: .2f} z{: .2f}", tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2)), cv::Point2f(10, 60), 1.7, cv::Scalar(0, 255, 255), 3);
-            tools::draw_text(display_img, fmt::format("rvec:  x{: .2f} y{: .2f} z{: .2f}", rvec.at<double>(0), rvec.at<double>(1), rvec.at<double>(2)), cv::Point2f(10, 120), 1.7, cv::Scalar(0, 255, 255), 3);
+            // tools::draw_text(display_img, fmt::format("tvec:  x{: .2f} y{: .2f} z{: .2f}", tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2)), cv::Point2f(10, 60), 1.7, cv::Scalar(0, 255, 255), 3);
+            // tools::draw_text(display_img, fmt::format("rvec:  x{: .2f} y{: .2f} z{: .2f}", rvec.at<double>(0), rvec.at<double>(1), rvec.at<double>(2)), cv::Point2f(10, 120), 1.7, cv::Scalar(0, 255, 255), 3);
 
-            cv::Mat rmat;
-            cv::Rodrigues(rvec, rmat);
-            double yaw = atan2(rmat.at<double>(0, 2), rmat.at<double>(2, 2));
-            double pitch = -asin(rmat.at<double>(1, 2));
-            double roll = atan2(rmat.at<double>(1, 0), rmat.at<double>(1, 1));
-            tools::draw_text(display_img, fmt::format("yaw:   {:.2f}", yaw * 180 / 3.1415926), cv::Point2f(10, 180), 1.7, cv::Scalar(0, 255, 255), 3);
-            tools::draw_text(display_img, fmt::format("pitch: {:.2f}", pitch * 180 / 3.1415926), cv::Point2f(10, 240), 1.7, cv::Scalar(0, 255, 255), 3);
-            tools::draw_text(display_img, fmt::format("roll:  {:.2f}", roll * 180 / 3.1415926), cv::Point2f(10, 300), 1.7, cv::Scalar(0, 255, 255), 3);
+            // cv::Mat rmat;
+            // cv::Rodrigues(rvec, rmat);
+            // double yaw = atan2(rmat.at<double>(0, 2), rmat.at<double>(2, 2));
+            // double pitch = -asin(rmat.at<double>(1, 2));
+            // double roll = atan2(rmat.at<double>(1, 0), rmat.at<double>(1, 1));
+            // tools::draw_text(display_img, fmt::format("yaw:   {:.2f}", yaw * 180 / 3.1415926), cv::Point2f(10, 180), 1.7, cv::Scalar(0, 255, 255), 3);
+            // tools::draw_text(display_img, fmt::format("pitch: {:.2f}", pitch * 180 / 3.1415926), cv::Point2f(10, 240), 1.7, cv::Scalar(0, 255, 255), 3);
+            // tools::draw_text(display_img, fmt::format("roll:  {:.2f}", roll * 180 / 3.1415926), cv::Point2f(10, 300), 1.7, cv::Scalar(0, 255, 255), 3);
 
             // 添加每一个扇叶中心的数据
             if (fanblades.size())
@@ -121,7 +121,7 @@ int main()
                 cv::Point3f rotation_C;
 
                 auto_buff::calculateRotationCenter(rvec, tvec,rotation_C);
-                tools::draw_text(display_img, fmt::format("rotation_C:  x{: .2f} y{: .2f} z{: .2f}", rotation_C.x, rotation_C.y, rotation_C.z), cv::Point2f(10, 360), 1.7, cv::Scalar(0, 255, 255), 3);
+                // tools::draw_text(display_img, fmt::format("rotation_C:  x{: .2f} y{: .2f} z{: .2f}", rotation_C.x, rotation_C.y, rotation_C.z), cv::Point2f(10, 360), 1.7, cv::Scalar(0, 255, 255), 3);
                 data["rotation_C_x"]=rotation_C.x;
                 data["rotation_C_y"]=rotation_C.y;
                 data["rotation_C_z"]=rotation_C.z;

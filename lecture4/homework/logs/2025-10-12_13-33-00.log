@@ -1,0 +1,139 @@
+[2025-10-12 13:33:00.739] [info] HikRobot's daemon thread started.
+[2025-10-12 13:33:01.570] [info] HikRobot's capture thread started.
+[2025-10-12 13:35:34.653] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:35:34.653] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:35:38.989] [info] Reset usb successfully :)
+[2025-10-12 13:35:39.578] [info] HikRobot's capture thread started.
+[2025-10-12 13:35:40.697] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:35:40.697] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:35:40.829] [warning] Unable to open usb!
+[2025-10-12 13:35:40.833] [warning] Not found camera!
+[2025-10-12 13:35:40.935] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:40.935] [warning] Unable to open usb!
+[2025-10-12 13:35:40.937] [warning] Not found camera!
+[2025-10-12 13:35:41.038] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.039] [warning] Unable to open usb!
+[2025-10-12 13:35:41.041] [warning] Not found camera!
+[2025-10-12 13:35:41.142] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.142] [warning] Unable to open usb!
+[2025-10-12 13:35:41.144] [warning] Not found camera!
+[2025-10-12 13:35:41.245] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.246] [warning] Unable to open usb!
+[2025-10-12 13:35:41.248] [warning] Not found camera!
+[2025-10-12 13:35:41.352] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.353] [warning] Unable to open usb!
+[2025-10-12 13:35:41.355] [warning] Not found camera!
+[2025-10-12 13:35:41.456] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.457] [warning] Unable to open usb!
+[2025-10-12 13:35:41.461] [warning] Not found camera!
+[2025-10-12 13:35:41.564] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.565] [warning] Unable to open usb!
+[2025-10-12 13:35:41.569] [warning] Not found camera!
+[2025-10-12 13:35:41.671] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.672] [warning] Unable to open usb!
+[2025-10-12 13:35:41.679] [warning] Not found camera!
+[2025-10-12 13:35:41.781] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.781] [warning] Unable to open usb!
+[2025-10-12 13:35:41.782] [warning] Not found camera!
+[2025-10-12 13:35:41.884] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.885] [warning] Unable to open usb!
+[2025-10-12 13:35:41.887] [warning] Not found camera!
+[2025-10-12 13:35:41.991] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:41.992] [warning] Unable to open usb!
+[2025-10-12 13:35:41.994] [warning] Not found camera!
+[2025-10-12 13:35:42.095] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:42.095] [warning] Unable to open usb!
+[2025-10-12 13:35:42.098] [warning] Not found camera!
+[2025-10-12 13:35:42.199] [warning] MV_CC_StopGrabbing failed: 0x80000000
+[2025-10-12 13:35:42.460] [info] Reset usb successfully :)
+[2025-10-12 13:35:43.221] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:39.772] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:39.772] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:41.111] [info] Reset usb successfully :)
+[2025-10-12 13:37:41.818] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:41.921] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:41.921] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:43.070] [info] Reset usb successfully :)
+[2025-10-12 13:37:43.779] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:43.881] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:43.881] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:45.230] [info] Reset usb successfully :)
+[2025-10-12 13:37:45.946] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:46.049] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:46.049] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:47.177] [info] Reset usb successfully :)
+[2025-10-12 13:37:47.824] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:47.926] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:47.927] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:49.264] [info] Reset usb successfully :)
+[2025-10-12 13:37:50.078] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:50.180] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:50.181] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:50.575] [info] Reset usb successfully :)
+[2025-10-12 13:37:51.279] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:51.382] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:51.382] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:52.535] [info] Reset usb successfully :)
+[2025-10-12 13:37:53.260] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:53.363] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:53.363] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:54.702] [info] Reset usb successfully :)
+[2025-10-12 13:37:55.414] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:55.516] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:55.517] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:56.672] [info] Reset usb successfully :)
+[2025-10-12 13:37:57.363] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:57.466] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:57.466] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:37:58.804] [info] Reset usb successfully :)
+[2025-10-12 13:37:59.508] [info] HikRobot's capture thread started.
+[2025-10-12 13:37:59.611] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:37:59.611] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:00.749] [info] Reset usb successfully :)
+[2025-10-12 13:38:01.467] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:01.569] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:01.570] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:02.896] [info] Reset usb successfully :)
+[2025-10-12 13:38:03.636] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:03.738] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:03.738] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:04.868] [info] Reset usb successfully :)
+[2025-10-12 13:38:05.587] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:05.689] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:05.690] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:07.025] [info] Reset usb successfully :)
+[2025-10-12 13:38:07.736] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:07.838] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:07.839] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:08.962] [info] Reset usb successfully :)
+[2025-10-12 13:38:09.674] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:09.777] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:09.778] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:11.125] [info] Reset usb successfully :)
+[2025-10-12 13:38:11.823] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:11.925] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:11.925] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:12.335] [info] Reset usb successfully :)
+[2025-10-12 13:38:13.066] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:13.169] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:13.169] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:14.316] [info] Reset usb successfully :)
+[2025-10-12 13:38:15.014] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:15.117] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:15.117] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:16.450] [info] Reset usb successfully :)
+[2025-10-12 13:38:17.159] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:17.261] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:17.261] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:18.413] [info] Reset usb successfully :)
+[2025-10-12 13:38:19.103] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:19.206] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:19.208] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:20.536] [info] Reset usb successfully :)
+[2025-10-12 13:38:21.234] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:21.336] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:21.337] [info] HikRobot's capture thread stopped.
+[2025-10-12 13:38:22.467] [info] Reset usb successfully :)
+[2025-10-12 13:38:23.142] [info] HikRobot's capture thread started.
+[2025-10-12 13:38:23.245] [warning] MV_CC_GetImageBuffer failed: 0x80000007
+[2025-10-12 13:38:23.245] [info] HikRobot's capture thread stopped.
