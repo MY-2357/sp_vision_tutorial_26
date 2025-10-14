@@ -29,7 +29,17 @@ Target::Target(
   // w: angular velocity
   // l: r2 - r1
   // h: z2 - z1
-  Eigen::VectorXd x0{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};  //初始化预测量
+
+  /*
+    备注：
+    此处可能出错的地方：
+    1、armor.ypd_in_world之类的只有x,y,z三个参数，我们认为x指第一个参数yaw，y指第二个参数pitch，z指第三个参数roll,
+     但实际上是否这样还未知
+  */
+
+  Eigen::VectorXd x0{
+    {armor.xyz_in_gimbal.x(), 0, armor.xyz_in_world.y(), 0, armor.xyz_in_world.z(), 0,
+     armor.ypd_in_world.x(), 0, armor.ypd_in_world.z(), 0, 0}};  //初始化预测量
   Eigen::MatrixXd P0 = P0_dig.asDiagonal();
 
   // 防止夹角求和出现异常值
