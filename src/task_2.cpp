@@ -110,13 +110,8 @@ int main(int argc, char * argv[])
     solver.set_R_gimbal2world(q);  // 使用从C板获取的四元数来对solver计算的世界坐标加以修正
     solver.solve(armor);
     //计算pitch和yaw
-    auto pos = armor.xyz_in_world;  // 装甲板的中心位置
-    /*
-      这里使用了一个假设：yaw，pitch的取值是负pi到pi，
-      yaw是从x开始，以z为转轴转动逆时针的角度，pitch是从x开始，以y为转轴转动逆时针的角度
-    */
-    float yaw_target = std::atan2(pos.y(), pos.x());
-    float pitch_target = -std::atan2(pos.z(), pos.x());
+    float yaw_target = armor.ypr_in_world.x();
+    float pitch_target = armor.ypr_in_world.y();
     // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
     // 修改时，需要同时修改另外两个文件的对应函数
     auto send_command = [&gimbal, &plotter](
@@ -134,10 +129,11 @@ int main(int argc, char * argv[])
       data["pitch"] = state.pitch + pitch_output;
       plotter.plot(data);
     };
-    /*****************上面代码与task_1相同************/
+    /*****************上面代码与task_1基本相同************/
     // 计算云台的合适朝向
-    tools::Trajectory trajectory(   //备注：这一行可能会出错的地方：我们认为pos.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定跑口处的z值为0
-      gimbal.state().bullet_speed, sqrt(pos.x() * pos.x() + pos.y() * pos.y()), pos.z());
+    auto pos_xyz = armor.xyz_in_world;  // 装甲板的中心位置
+    tools::Trajectory trajectory(   //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定跑口处的z值为0
+      gimbal.state().bullet_speed, sqrt(pos_xyz.x() * pos_xyz.x() + pos_xyz.y() * pos_xyz.y()), pos_xyz.z());
     if (trajectory.unsolvable)  //当前距离无法射击
     {
       // 无法射击也要去调节云台的朝向，因为云台的yaw必须对准，pitch指向装甲板中心的话，误差倒不大

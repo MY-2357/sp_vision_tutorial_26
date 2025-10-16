@@ -119,8 +119,8 @@ int main(int argc, char * argv[])
       这里使用了一个假设：yaw，pitch的取值是负pi到pi，
       yaw是从x开始，以z为转轴转动逆时针的角度，pitch是从x开始，以y为转轴转动逆时针的角度
     */
-    float yaw_target = std::atan2(pos.y(), pos.x());
-    float pitch_target = -std::atan2(pos.z(), pos.x());
+    float yaw_target = armor.ypr_in_world.x();
+    float pitch_target = armor.ypr_in_world.y();
     // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
     // 修改时，需要同时修改另外两个文件的对应函数
     auto send_command = [&gimbal, &plotter](

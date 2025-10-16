@@ -32,9 +32,11 @@ Target::Target(
 
   /*
     备注：
-    此处可能出错的地方：
-    1、armor.ypd_in_world之类的只有x,y,z三个参数，我们认为x指第一个参数yaw，y指第二个参数pitch，z指第三个参数roll,
+    1、此处可能出错的地方：
+      armor.ypd_in_world之类的只有x,y,z三个参数，我们认为x指第一个参数yaw，y指第二个参数pitch，z指第三个参数roll,
      但实际上是否这样还未知
+    2、x,y,z是指的旋转中心坐标，而非目标的，为了击打到正前方的目标需要进行额外计算
+    3、我们这里给的是一个初始值，后续这些值会自己动态调整
   */
 
   Eigen::VectorXd x0{
