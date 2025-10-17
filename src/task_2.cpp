@@ -88,7 +88,25 @@ int main(int argc, char * argv[])
     1、修改满足射击条件的判断
   */
   const int shoot_total = 10;  //根据要求，射击进行10次
-  int shoot_count = 0;   //当前已经完成的射击次数
+  int shoot_count = 0;         //当前已经完成的射击次数
+
+  // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
+  // 修改时，需要同时修改另外两个文件的对应函数
+  tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+  tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+  auto send_command = [&gimbal, &plotter,&pid_yaw,&pid_pitch](
+                        double yaw_target, double pitch_target, bool fire = false) -> void {
+    //使用PID控制算法发送指令
+    auto state = gimbal.state();  // 当前云台状态
+    float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
+    float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
+    gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
+    // 使用plotter绘制向云台发送的控制信息
+    nlohmann::json data;
+    data["yaw"] = state.yaw + yaw_output;
+    data["pitch"] = state.pitch + pitch_output;
+    plotter.plot(data);
+  };
 
   while (!exiter.exit()) {
     // Your code start
@@ -112,27 +130,11 @@ int main(int argc, char * argv[])
     //计算pitch和yaw
     float yaw_target = armor.ypr_in_world.x();
     float pitch_target = armor.ypr_in_world.y();
-    // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
-    // 修改时，需要同时修改另外两个文件的对应函数
-    auto send_command = [&gimbal, &plotter](
-                          int yaw_target, int pitch_target, bool fire = false) -> void {
-      //使用PID控制算法发送指令
-      tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-      tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-      auto state = gimbal.state();  // 当前云台状态
-      float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
-      float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
-      gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
-      // 使用plotter绘制向云台发送的控制信息
-      nlohmann::json data;
-      data["yaw"] = state.yaw + yaw_output;
-      data["pitch"] = state.pitch + pitch_output;
-      plotter.plot(data);
-    };
+
     /*****************上面代码与task_1基本相同************/
     // 计算云台的合适朝向
     auto pos_xyz = armor.xyz_in_world;  // 装甲板的中心位置
-    tools::Trajectory trajectory(   //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定跑口处的z值为0
+    tools::Trajectory trajectory(   //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定炮口处的z值为0
       gimbal.state().bullet_speed, sqrt(pos_xyz.x() * pos_xyz.x() + pos_xyz.y() * pos_xyz.y()), pos_xyz.z());
     if (trajectory.unsolvable)  //当前距离无法射击
     {

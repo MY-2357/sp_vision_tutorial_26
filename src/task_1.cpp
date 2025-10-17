@@ -98,6 +98,24 @@ int main(int argc, char * argv[])
       （上面的调参方法是GPT给的，可能需要根据实际情况调整）
     */
 
+    // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
+    // 修改时，需要同时修改另外两个文件的对应函数
+    tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+    tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+    auto send_command = [&gimbal, &plotter,&pid_yaw, &pid_pitch](
+                          double yaw_target, double pitch_target, bool fire = false) -> void {
+      //使用PID控制算法发送指令
+      auto state = gimbal.state();  // 当前云台状态
+      float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
+      float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
+      gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
+      // 使用plotter绘制向云台发送的控制信息
+      nlohmann::json data;
+      data["yaw"] = state.yaw + yaw_output;
+      data["pitch"] = state.pitch + pitch_output;
+      plotter.plot(data);
+    };
+
     // 打开相机并读取图像
     camera.read(img, t);
     // 使用YOLO来检测并获取装甲板的位置（像素坐标系，包括四个点）
@@ -121,23 +139,6 @@ int main(int argc, char * argv[])
     */
     float yaw_target = armor.ypr_in_world.x();
     float pitch_target = armor.ypr_in_world.y();
-    // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
-    // 修改时，需要同时修改另外两个文件的对应函数
-    auto send_command = [&gimbal, &plotter](
-                          int yaw_target, int pitch_target, bool fire = false) -> void {
-      //使用PID控制算法发送指令
-      tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-      tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-      auto state = gimbal.state();  // 当前云台状态
-      float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
-      float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
-      gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
-      // 使用plotter绘制向云台发送的控制信息
-      nlohmann::json data;
-      data["yaw"] = state.yaw + yaw_output;
-      data["pitch"] = state.pitch + pitch_output;
-      plotter.plot(data);
-    };
     // 调用send_command函数发送指令
     send_command(yaw_target, pitch_target);
     // Your code end
