@@ -79,6 +79,10 @@ int main(int argc, char * argv[])
   /*
     待处理：
     1、击打时，可能需要考虑云台转动时的速度对于轨迹的影响
+    2、t似乎是在读取图片时更新的，指的是那一帧图像所对应的时间戳。但是由于我们的代码逻辑比较复杂，运行需要一定时间，
+      可能会造成部分地方传入的t有些偏差。不过注意：并非所有的地方都要使用新的时间的，我们对原先图像上的装甲板的位置等信息进行分析时，
+      肯定是要使用装甲板在那个时间下的状态。所以要修改时，请谨慎，看好每一个地方的t是干什么的
+
   */
 
   auto_aim::Target * pTarget = NULL;
@@ -129,6 +133,7 @@ int main(int argc, char * argv[])
 
     if (!pTarget)  //第一次检测到装甲板时，创建Target对象
       pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+    pTarget->predict(t);  //传入时间戳
     pTarget->update(best_armor);  //更新Target对象
 
     // 未检测到装甲板时，pTarget为NULL，代码不能继续执行，而是选择等待
@@ -179,6 +184,7 @@ int main(int argc, char * argv[])
       // 计算到预测时间后，装甲板的位置
       pTarget->predict(time_to_shoot);
       auto predict_target = pTarget->armor_xyza_list()[armor_id];
+      pTarget->predict(t);  // 回退为原来的时间
       // 先检查一下预测的装甲板位置是否在yaw_target附近
       if (abs(tools::limit_rad(predict_target[3]) - yaw_target) >= 0.1)  //设置检测阈值为0.1rad
         continue;                                                        //不符合要求
@@ -194,6 +200,8 @@ int main(int argc, char * argv[])
       // 可以击打，发送指令,对着装甲板的预测位置击打（这会导致云台有着轻微的持续转动）
       send_command(predict_target[3],trajectory.pitch,true);
       pTarget->predict(t);  // 更新预测状态
+      std::this_thread::sleep_for(500ms);   // 延时500ms，等待云台稳定
+      continue;
     }
   }
 

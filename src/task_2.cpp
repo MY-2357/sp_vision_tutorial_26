@@ -14,6 +14,7 @@
 #include "tools/recorder.hpp"
 #include "tools/trajectory.hpp"
 
+
 const std::string keys =
   "{help h usage ? | | 输出命令行参数说明}"
   "{@config-path   | | yaml配置文件路径 }";
@@ -94,7 +95,7 @@ int main(int argc, char * argv[])
   // 修改时，需要同时修改另外两个文件的对应函数
   tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
   tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-  auto send_command = [&gimbal, &plotter,&pid_yaw,&pid_pitch](
+  auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
     //使用PID控制算法发送指令
     auto state = gimbal.state();  // 当前云台状态
@@ -128,8 +129,8 @@ int main(int argc, char * argv[])
     solver.set_R_gimbal2world(q);  // 使用从C板获取的四元数来对solver计算的世界坐标加以修正
     solver.solve(armor);
     //计算pitch和yaw
-    float yaw_target = armor.ypr_in_world.x();
-    float pitch_target = armor.ypr_in_world.y();
+    float yaw_target = armor.ypd_in_world.x();
+    float pitch_target = armor.ypd_in_world.y();
 
     /*****************上面代码与task_1基本相同************/
     // 计算云台的合适朝向
@@ -145,20 +146,23 @@ int main(int argc, char * argv[])
     pitch_target = trajectory.pitch;  //更新pitch_target
     // 检查是否符合射击条件
     if (
-      abs(gimbal.state().pitch - yaw_target) <
-        0.01 &&  //射击条件这里其实也不太清楚，目前限制为当前状态与目标状态的yaw与pitch
-      abs(gimbal.state().yaw - pitch_target) <
-        0.01)  //相差在0.01rad之内（约0.57度），之后肯定需要调
+      abs(gimbal.state().pitch - pitch_target) <
+        0.02 &&  //射击条件这里其实也不太清楚，目前限制为当前状态与目标状态的yaw与pitch
+      abs(gimbal.state().yaw - yaw_target) < 0.02)  //相差在0.02rad之内（约1.14度），之后肯定需要调
     {
       if (shoot_count < shoot_total) {
         // 符合射击条件，发送射击指令
         send_command(yaw_target, pitch_target, true);
         shoot_count++;
         // 等待一段时间，然后重新开始循环
-        std::this_thread::sleep_for(100ms);
+        std::this_thread::sleep_for(500ms);
+        continue;
+      } else {
+        // 射击次数达到上限，结束循环
+        break;
       }
     }
-    send_command(yaw_target, pitch_target);  //发送指令移动云台
+    send_command(yaw_target, pitch_target, true);
 
     // Your code end
   }
