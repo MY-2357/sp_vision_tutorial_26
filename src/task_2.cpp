@@ -14,7 +14,6 @@
 #include "tools/recorder.hpp"
 #include "tools/trajectory.hpp"
 
-
 const std::string keys =
   "{help h usage ? | | 输出命令行参数说明}"
   "{@config-path   | | yaml配置文件路径 }";
@@ -93,22 +92,31 @@ int main(int argc, char * argv[])
 
   // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
   // 修改时，需要同时修改另外两个文件的对应函数
-  tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-  tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+  tools::PID pid_yaw(0.0f, 1.5f, 0.3f, 0.0f, 3.0f, 0.1f, true);
+  tools::PID pid_pitch(0.0f, 1.5f, 0.3f, 0.0f, 3.0f, 0.1f, true);
   auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
+    // if (pitch_target > 0.35)
+    //   pitch_target = 0.35;
+    // else if (pitch_target < -0.35)
+    //   pitch_target = -0.35;
     //使用PID控制算法发送指令
     auto state = gimbal.state();  // 当前云台状态
     float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
     float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
-    gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
+    //  gimbal.send(true, fire, /*state.yaw +*/ yaw_output, /*state.pitch + */pitch_output);
+    gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
-    data["yaw"] = state.yaw + yaw_output;
-    data["pitch"] = state.pitch + pitch_output;
+    // data["yaw"] = state.yaw + yaw_output;
+    // data["pitch"] = state.pitch +  pitch_output;
+    data["yaw"] = yaw_target;
+    data["pitch"] = pitch_target;
+
     plotter.plot(data);
   };
 
+  std::cout << "started" << std::endl;
   while (!exiter.exit()) {
     // Your code start
 
@@ -117,6 +125,7 @@ int main(int argc, char * argv[])
     camera.read(img, t);
     // 使用YOLO来检测并获取装甲板的位置（像素坐标系，包括四个点）
     auto armors = yolo.detect(img);
+    if (cv::waitKey(20) == 'q') break;
     if (armors.empty())  // 没有检测到装甲板
     {
       // 让线程休眠，减少资源占用
@@ -130,7 +139,7 @@ int main(int argc, char * argv[])
     solver.solve(armor);
     //计算pitch和yaw
     float yaw_target = armor.ypd_in_world.x();
-    float pitch_target = armor.ypd_in_world.y();
+    float pitch_target = -armor.ypd_in_world.y();
 
     /*****************上面代码与task_1基本相同************/
     // 计算云台的合适朝向
@@ -141,28 +150,44 @@ int main(int argc, char * argv[])
     {
       // 无法射击也要去调节云台的朝向，因为云台的yaw必须对准，pitch指向装甲板中心的话，误差倒不大
       send_command(yaw_target, pitch_target);
+      std::cout << "to far to reach" << std::endl;
       continue;
     }
-    pitch_target = trajectory.pitch;  //更新pitch_target
+    pitch_target = -trajectory.pitch;  //更新pitch_target
     // 检查是否符合射击条件
+    nlohmann::json data;
+    data["d_pitch"] = gimbal.state().pitch - pitch_target;
+    data["d_yaw"] = gimbal.state().yaw - yaw_target;
+    data["gimbal_pitch"] = gimbal.state().pitch;
+    data["gimbal_yaw"] = gimbal.state().yaw;
+
+    plotter.plot(data);
+
     if (
       abs(gimbal.state().pitch - pitch_target) <
-        0.02 &&  //射击条件这里其实也不太清楚，目前限制为当前状态与目标状态的yaw与pitch
-      abs(gimbal.state().yaw - yaw_target) < 0.02)  //相差在0.02rad之内（约1.14度），之后肯定需要调
+        0.005 &&  //射击条件这里其实也不太清楚，目前限制为当前状态与目标状态的yaw与pitch
+      abs(gimbal.state().yaw - yaw_target) < 0.005)  //相差在0.005rad之内，之后肯定需要调
     {
       if (shoot_count < shoot_total) {
         // 符合射击条件，发送射击指令
+        pitch_target+=0.008;
+        yaw_target-=0.005;
         send_command(yaw_target, pitch_target, true);
+        send_command(yaw_target, pitch_target, false);
+        // send_command(yaw_target, pitch_target, false);
+        std::cout << "fire" << std::endl;
         shoot_count++;
         // 等待一段时间，然后重新开始循环
-        std::this_thread::sleep_for(500ms);
+        std::this_thread::sleep_for(1500ms);
         continue;
       } else {
         // 射击次数达到上限，结束循环
-        break;
+        send_command(yaw_target, pitch_target, false);
+        continue;
+        //   break;
       }
     }
-    send_command(yaw_target, pitch_target, true);
+    send_command(yaw_target, pitch_target);
 
     // Your code end
   }

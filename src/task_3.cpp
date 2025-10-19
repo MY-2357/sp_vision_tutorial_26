@@ -93,15 +93,23 @@ int main(int argc, char * argv[])
   tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
   auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
+    // if (pitch_target > 0.35)
+    //   pitch_target = 0.35;
+    // else if (pitch_target < -0.35)
+    //   pitch_target = -0.35;
     //使用PID控制算法发送指令
     auto state = gimbal.state();  // 当前云台状态
-    double yaw_output = pid_yaw.calc(yaw_target, state.yaw);
-    double pitch_output = pid_pitch.calc(pitch_target, state.pitch);
-    gimbal.send(true, fire, state.yaw + yaw_output, state.pitch + pitch_output);
+    float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
+    float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
+    //  gimbal.send(true, fire, /*state.yaw +*/ yaw_output, /*state.pitch + */pitch_output);
+    gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
-    data["yaw"] = state.yaw + yaw_output;
-    data["pitch"] = state.pitch + pitch_output;
+    // data["yaw"] = state.yaw + yaw_output;
+    // data["pitch"] = state.pitch +  pitch_output;
+    data["yaw"] = yaw_target;
+    data["pitch"] = pitch_target;
+
     plotter.plot(data);
   };
 
@@ -112,13 +120,15 @@ int main(int argc, char * argv[])
     camera.read(img, t);
     // 使用YOLO来检测并获取装甲板的位置（像素坐标系，包括四个点）
     auto armors = yolo.detect(img);
+    if (cv::waitKey(20) == 'q') break;
     if (armors.empty())  // 没有检测到装甲板
     {
       // 让线程休眠，减少资源占用
+      std::cout << "No Armor!" << std::endl;
       std::this_thread::sleep_for(100ms);
       continue;
     }
-    // 这个地方本来想要依次传入每一个装甲板进行拟合的，但是豆包说一帧传入多个容易出问题，故而每次传入可信读最高的装甲板
+    // 这个地方本来想要依次传入每一个装甲板进行拟合的，但是豆包说一帧传入多个容易出问题，故而每次传入可信度最高的装甲板
     auto best_armor_it = armors.begin();  // 指向可信度最高的装甲板
     for (auto it = armors.begin(); it != armors.end(); ++it) {
       // Solver计算armor的位置
@@ -133,7 +143,7 @@ int main(int argc, char * argv[])
 
     if (!pTarget)  //第一次检测到装甲板时，创建Target对象
       pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
-    pTarget->predict(t);  //传入时间戳
+    pTarget->predict(t);          //传入时间戳
     pTarget->update(best_armor);  //更新Target对象
 
     // 未检测到装甲板时，pTarget为NULL，代码不能继续执行，而是选择等待
@@ -141,6 +151,7 @@ int main(int argc, char * argv[])
 
     if (pTarget->diverged())  //模型出现了发散，必须重新创建Target对象进行拟合
     {
+      std::cout << "The model is diverged...restarting" << std::endl;
       delete pTarget;
       pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
       continue;
@@ -159,7 +170,7 @@ int main(int argc, char * argv[])
     */
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
-    data["predict_omega"]=pTarget->ekf_x()[7];
+    data["predict_omega"] = pTarget->ekf_x()[7];
     plotter.plot(data);
     //
     auto yaw_target = atan2(rotation_C_info[2], rotation_C_info[0]);
@@ -198,9 +209,9 @@ int main(int argc, char * argv[])
       if (abs(trajectory.fly_time - time_to_shoot) >= 0.05)
         continue;  //设置阈值为0.05s,转动到目标位置所需要的时间与预测飞行时间相差过大认为无法击打
       // 可以击打，发送指令,对着装甲板的预测位置击打（这会导致云台有着轻微的持续转动）
-      send_command(predict_target[3],trajectory.pitch,true);
-      pTarget->predict(t);  // 更新预测状态
-      std::this_thread::sleep_for(500ms);   // 延时500ms，等待云台稳定
+      send_command(predict_target[3], trajectory.pitch, true);
+      pTarget->predict(t);                 // 更新预测状态
+      std::this_thread::sleep_for(500ms);  // 延时500ms，等待云台稳定
       continue;
     }
   }
