@@ -98,6 +98,7 @@ int main(int argc, char * argv[])
     plotter.plot(data);
   };
 
+  std::list<auto_aim::Target> target_list;
   while (!exiter.exit()) {
     // 打开相机并读取图像
     camera.read(img, t);
@@ -118,16 +119,36 @@ int main(int argc, char * argv[])
       solver.solve(armor);
     }
 
-
     // 将装甲板信息传给 Aimer 进行自动拟合与击打判断
-    std::list<auto_aim::Target> target_list;
     if (!armors.empty()) {
       // 以最高置信度装甲板为输入，生成 Target 列表
       auto best_armor = *std::max_element(
         armors.begin(), armors.end(), [](const auto_aim::Armor & a, const auto_aim::Armor & b) {
           return a.confidence < b.confidence;
         });
-      target_list.emplace_back(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+      // target_list.emplace_back(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+      // Target实例管理：仅保留一个实例并更新
+      if (target_list.empty()) {
+        // 首次创建：参数可根据实际调整（radius为旋转半径，P0_dig为初始协方差）
+        target_list.emplace_back(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+      } else {
+        auto & target = target_list.front();  // 操作唯一实例
+        if (target.diverged()) {
+          // 若发散，重建实例
+          target_list.clear();
+          target_list.emplace_back(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+        } else {
+          // 未发散，更新EKF（关键步骤）
+          target.update(best_armor);
+          // 预测到当前时间，确保状态同步
+          target.predict(t);
+        }
+      }
+    } else {
+      std::cout << "No Armor!" << std::endl;
+      target_list.clear();  // 新增：无装甲板时清空旧实例，避免后续用旧数据更新
+      std::this_thread::sleep_for(100ms);
+      continue;
     }
 
     // 调用 Aimer 自动处理拟合、预测、击打决策
