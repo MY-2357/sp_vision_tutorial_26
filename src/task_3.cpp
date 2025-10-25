@@ -42,7 +42,7 @@ int main(int argc, char * argv[])
   // 初始化auto_aim类
   auto_aim::YOLO yolo(config_path, true);
   auto_aim::Solver solver(config_path);
-  auto_aim::Aimer aimer(config_path); 
+  auto_aim::Aimer aimer(config_path);
 
   cv::Mat img;
   Eigen::Quaterniond q;
@@ -114,7 +114,10 @@ int main(int argc, char * argv[])
     // 使用Solver计算装甲板世界坐标
     q = gimbal.q(t);
     solver.set_R_gimbal2world(q);
-    for (auto & armor : armors) solver.solve(armor);
+    for (auto & armor : armors) {
+      solver.solve(armor);
+    }
+
 
     // 将装甲板信息传给 Aimer 进行自动拟合与击打判断
     std::list<auto_aim::Target> target_list;
