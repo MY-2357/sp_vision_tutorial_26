@@ -39,9 +39,19 @@ Target::Target(
     3、我们这里给的是一个初始值，后续这些值会自己动态调整
   */
 
-  Eigen::VectorXd x0{
-    {armor.xyz_in_gimbal.x(), 0, armor.xyz_in_world.y(), 0, armor.xyz_in_world.z(), 0,
-     armor.ypd_in_world.x(), 0, armor.ypd_in_world.z(), 0, 0}};  //初始化预测量
+  // Eigen::VectorXd x0{
+  //   {armor.xyz_in_gimbal.x(), 0, armor.xyz_in_world.y(), 0, armor.xyz_in_world.z(), 0,
+  //    armor.ypd_in_world.x(), 0, armor.ypd_in_world.z(), 0, 0}};  //初始化预测量
+
+  double a0 = armor.ypd_in_world.x();  // yaw
+  double r0 = radius;
+  double x_center = armor.xyz_in_world.x() - r0 * std::cos(a0);
+  double y_center = armor.xyz_in_world.y() - r0 * std::sin(a0);
+  double z_center = armor.xyz_in_world.z();
+
+  // omega 初值建议用观测输入参数
+  Eigen::VectorXd x0{{x_center, 0, y_center, 0, z_center, 0, a0, 4.0, r0, 0, 0}};
+
   Eigen::MatrixXd P0 = P0_dig.asDiagonal();
 
   // 防止夹角求和出现异常值
@@ -85,8 +95,8 @@ void Target::predict(double dt)
   double v1, v2;
 
   // TODO: 根据实际情况，调整v1与v2
-  v1 = 1;  // 加速度方差
-  v2 = 1;  // 角加速度方差
+  v1 = 10;  // 加速度方差
+  v2 = 10;  // 角加速度方差
 
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;

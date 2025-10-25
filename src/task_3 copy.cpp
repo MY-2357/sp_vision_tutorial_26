@@ -93,9 +93,20 @@ int main(int argc, char * argv[])
   tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
   auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
+    // if (pitch_target > 0.35)
+    //   pitch_target = 0.35;
+    // else if (pitch_target < -0.35)
+    //   pitch_target = -0.35;
+    //使用PID控制算法发送指令
+    auto state = gimbal.state();  // 当前云台状态
+    float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
+    float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
+    //  gimbal.send(true, fire, /*state.yaw +*/ yaw_output, /*state.pitch + */pitch_output);
     gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
+    // data["yaw"] = state.yaw + yaw_output;
+    // data["pitch"] = state.pitch +  pitch_output;
     data["yaw"] = yaw_target;
     data["pitch"] = pitch_target;
 
@@ -125,7 +136,7 @@ int main(int argc, char * argv[])
       solver.set_R_gimbal2world(q);  // 使用从C板获取的四元数来对solver计算的世界坐标加以修正
       solver.solve(*it);
       // 比较置信度，更新最佳装甲板的迭代器
-      if (it->confidence > best_armor_it->confidence)
+      if (it->confidence > best_armor_it->confidence)  // it-> 访问成员（类似指针->）
         best_armor_it = it;
     }
     auto & best_armor = *best_armor_it;  // 指向可信度最高的装甲板
@@ -145,16 +156,16 @@ int main(int argc, char * argv[])
     // 未检测到装甲板时，pTarget为NULL，代码不能继续执行，而是选择等待
     if (!pTarget) continue;
 
-    if (pTarget->diverged())  //模型出现了发散，必须重新创建Target对象进行拟合
-    {
-      std::cout << "The model is diverged...restarting" << std::endl;
-      delete pTarget;
-      pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
-      continue;
-    }
+    // if (pTarget->diverged())  //模型出现了发散，必须重新创建Target对象进行拟合
+    // {
+    //   std::cout << "The model is diverged...restarting" << std::endl;
+    //   delete pTarget;
+    //   pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+    //   continue;
+    // }
 
-    if (!pTarget->convergened()) continue;  //模型还未收敛，继续等待
-    //模型已经收敛
+    // if (!pTarget->convergened()) continue;  //模型还未收敛，继续等待
+    // //模型已经收敛
 
     // 先获取当下云台中心与旋转中心水平连线的角度
     auto rotation_C_info = pTarget->ekf_x();
