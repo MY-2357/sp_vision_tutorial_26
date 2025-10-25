@@ -21,37 +21,38 @@ Target::Target(
   is_converged_(false),
   switch_count_(0)
 {
+  auto r = radius;
   priority = armor.priority;
+  const Eigen::VectorXd & xyz = armor.xyz_in_world;
+  const Eigen::VectorXd & ypr = armor.ypr_in_world;
 
-  // TODO: 根据下方注释提示，补全x0
+  // 旋转中心的坐标
+  auto center_x = xyz[0] + r * std::cos(ypr[0]);
+  auto center_y = xyz[1] + r * std::sin(ypr[0]);
+  auto center_z = xyz[2];
+
   // x vx y vy z vz a w r l h
   // a: angle
   // w: angular velocity
   // l: r2 - r1
   // h: z2 - z1
+  Eigen::VectorXd x0{{center_x, 0, center_y, 0, center_z, 0, ypr[0], 0, r, 0, 0}};  //初始化预测量
+  Eigen::MatrixXd P0 = P0_dig.asDiagonal();
 
-  /*
-    备注：
-    1、此处可能出错的地方：
-      armor.ypd_in_world之类的只有x,y,z三个参数，我们认为x指第一个参数yaw，y指第二个参数pitch，z指第三个参数roll,
-     但实际上是否这样还未知
-    2、x,y,z是指的旋转中心坐标，而非目标的，为了击打到正前方的目标需要进行额外计算
-    3、我们这里给的是一个初始值，后续这些值会自己动态调整
-  */
+  // 防止夹角求和出现异常值
+  auto x_add = [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) -> Eigen::VectorXd {
+    Eigen::VectorXd c = a + b;
+    c[6] = tools::limit_rad(c[6]);
+    return c;
+  };
 
-  // Eigen::VectorXd x0{
-  //   {armor.xyz_in_gimbal.x(), 0, armor.xyz_in_world.y(), 0, armor.xyz_in_world.z(), 0,
-  //    armor.ypd_in_world.x(), 0, armor.ypd_in_world.z(), 0, 0}};  //初始化预测量
+  ekf_ = tools::ExtendedKalmanFilter(x0, P0, x_add);  //初始化滤波器（预测量、预测量协方差）
+}
 
-  double a0 = armor.ypd_in_world.x();  // yaw
-  double r0 = radius;
-  double x_center = armor.xyz_in_world.x() - r0 * std::cos(a0);
-  double y_center = armor.xyz_in_world.y() - r0 * std::sin(a0);
-  double z_center = armor.xyz_in_world.z();
-
-  // omega 初值建议用观测输入参数
-  Eigen::VectorXd x0{{x_center, 0, y_center, 0, z_center, 0, a0, 4.0, r0, 0, 0}};
-
+Target::Target(double x, double vyaw, double radius, double h) : armor_num_(4)
+{
+  Eigen::VectorXd x0{{x, 0, 0, 0, 0, 0, 0, vyaw, radius, 0, h}};
+  Eigen::VectorXd P0_dig{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
   Eigen::MatrixXd P0 = P0_dig.asDiagonal();
 
   // 防止夹角求和出现异常值
@@ -93,11 +94,13 @@ void Target::predict(double dt)
   // Piecewise White Noise Model
   // https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/07-Kalman-Filter-Math.ipynb
   double v1, v2;
-
-  // TODO: 根据实际情况，调整v1与v2
-  v1 = 10;  // 加速度方差
-  v2 = 10;  // 角加速度方差
-
+  if (name == ArmorName::outpost) {
+    v1 = 10;   // 前哨站加速度方差
+    v2 = 0.1;  // 前哨站角加速度方差
+  } else {
+    v1 = 100;  // 加速度方差
+    v2 = 400;  // 角加速度方差
+  }
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;
   auto c = dt * dt;
@@ -124,6 +127,10 @@ void Target::predict(double dt)
     x_prior[6] = tools::limit_rad(x_prior[6]);
     return x_prior;
   };
+
+  // 前哨站转速特判
+  if (this->convergened() && this->name == ArmorName::outpost && std::abs(this->ekf_.x[7]) > 2)
+    this->ekf_.x[7] = this->ekf_.x[7] > 0 ? 2.51 : -2.51;
 
   ekf_.predict(F, Q, f);
 }
@@ -244,7 +251,12 @@ bool Target::diverged() const
 
 bool Target::convergened()
 {
-  if (update_count_ > 3 && !this->diverged()) {
+  if (this->name != ArmorName::outpost && update_count_ > 3 && !this->diverged()) {
+    is_converged_ = true;
+  }
+
+  //前哨站特殊判断
+  if (this->name == ArmorName::outpost && update_count_ > 10 && !this->diverged()) {
     is_converged_ = true;
   }
 

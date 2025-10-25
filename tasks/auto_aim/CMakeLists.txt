@@ -10,6 +10,7 @@ add_library(auto_aim OBJECT
     target.cpp
     yolo.cpp
     yolos/yolov5.cpp
+    aimer.cpp
 )
 
 target_link_libraries(auto_aim io openvino::runtime)
