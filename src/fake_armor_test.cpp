@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
   double center_x = 2.0;
   double center_y = 0.0;
   double center_z = 0.0;
-  double dt = 0.033;  // 秒
+  double dt = 0.2;  // 秒
   int max_steps = 2000;
 
   if (argc > 1) omega = std::stod(argv[1]);
