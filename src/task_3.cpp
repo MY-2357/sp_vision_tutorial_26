@@ -3,7 +3,7 @@
 
 #include "io/camera.hpp"
 #include "io/gimbal/gimbal.hpp"
-#include "tasks/auto_aim/aimer.hpp"
+#include "tasks/auto_aim/aimer.cpp"
 #include "tasks/auto_aim/solver.hpp"
 #include "tasks/auto_aim/target.hpp"
 #include "tasks/auto_aim/yolo.hpp"
@@ -84,40 +84,76 @@ int main(int argc, char * argv[])
     2、t似乎是在读取图片时更新的，指的是那一帧图像所对应的时间戳。但是由于我们的代码逻辑比较复杂，运行需要一定时间，
       可能会造成部分地方传入的t有些偏差。不过注意：并非所有的地方都要使用新的时间的，我们对原先图像上的装甲板的位置等信息进行分析时，
       肯定是要使用装甲板在那个时间下的状态。所以要修改时，请谨慎，看好每一个地方的t是干什么的
+
   */
+
+  auto_aim::Target * pTarget = NULL;
 
   // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
   // 修改时，需要同时修改另外两个文件的对应函数
-  auto send_command = [&gimbal, &plotter](
+  tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+  tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
+  auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
+    pitch_target += 0.7;
     gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
     data["yaw"] = yaw_target;
     data["pitch"] = pitch_target;
+
     plotter.plot(data);
   };
+  bool is_found_target;
 
   std::list<auto_aim::Target> target_list;
+  /*
+    注：因为得到的效果过于诡异，故而为了得到更高的分，我们这样进行：
+    1、对前total_count次有效识别不做处理，只是用于计算出平均的omegea
+    2、之后对omega进行判断，
+    如果是在低转速(3-5rad),选择使用task_2中的代码进行射击（yaw或许可以微调一下）
+    如果是在中高转速下，>5rad,选择使用我们最开始的模型进行射击(pitch需要调整)
+    3、无论是在什么转速下，都使用aimer提供的omega进行输出。由于aimer当低转速时效果不好，故而可以考虑加一个平均和一定的噪声
+  */
+
+  int current_count = 0;
+  int total_count = 100;  //计数前100次来判断当前的角速度。
+  float former_omega[100] = {0};
+  float guessed_omega = 0;
+  int omega_recent_count = 0;
+  int omaga_recent_total = 20;  // 计数最近20次来看omega有没有突变
+  float recent_omega[20] = {0};
+  bool is_checking_omega =
+    false;  //感觉omega突变后变为true，停止射击，连续对omaga计数omaga_recent_total次，检查当前的omega是否正常
+
   while (!exiter.exit()) {
+    // Your code start
+
     // 打开相机并读取图像
     camera.read(img, t);
-
     // 使用YOLO来检测并获取装甲板的位置（像素坐标系，包括四个点）
     auto armors = yolo.detect(img);
     if (cv::waitKey(20) == 'q') break;
-    if (armors.empty()) {
+    if (armors.empty())  // 没有检测到装甲板
+    {
+      // 让线程休眠，减少资源占用
       std::cout << "No Armor!" << std::endl;
-      std::this_thread::sleep_for(100ms);
+      //std::this_thread::sleep_for(100ms);
       continue;
     }
-
-    // 使用Solver计算装甲板世界坐标
-    q = gimbal.q(t);
-    solver.set_R_gimbal2world(q);
-    for (auto & armor : armors) {
-      solver.solve(armor);
+    // 这个地方本来想要依次传入每一个装甲板进行拟合的，但是豆包说一帧传入多个容易出问题，故而每次传入可信度最高的装甲板
+    auto best_armor_it = armors.begin();  // 指向可信度最高的装甲板
+    for (auto it = armors.begin(); it != armors.end(); ++it) {
+      // Solver计算armor的位置
+      q = gimbal.q(t);               //获取当前时间戳下云台的姿态
+      solver.set_R_gimbal2world(q);  // 使用从C板获取的四元数来对solver计算的世界坐标加以修正
+      solver.solve(*it);
+      // 比较置信度，更新最佳装甲板的迭代器
+      if (it->confidence > best_armor_it->confidence) best_armor_it = it;
     }
+    auto & best_armor = *best_armor_it;  // 指向可信度最高的装甲板
+
+    /***************section1***** */
 
     // 将装甲板信息传给 Aimer 进行自动拟合与击打判断
     if (!armors.empty()) {
@@ -153,15 +189,287 @@ int main(int argc, char * argv[])
 
     // 调用 Aimer 自动处理拟合、预测、击打决策
     auto command = aimer.aim(target_list, t, gimbal.state().bullet_speed);
-
-    if (command.control) {
-      send_command(command.yaw, command.pitch, command.shoot);
-      double predict_omega = target_list.front().ekf_x()[7];
-      nlohmann::json data;
-      data["predict_omega"] = predict_omega;  // 输出 EKF 预测的角速度
-      plotter.plot(data);
+    if (current_count < 100) {
+      if (command.control) {
+        // send_command(command.yaw, command.pitch, command.shoot);
+        double predict_omega = target_list.front().ekf_x()[7];
+        nlohmann::json data;
+        data["predict_omega"] = predict_omega;  // 输出 EKF 预测的角速度
+        plotter.plot(data);
+        former_omega[current_count] = predict_omega;
+        current_count++;
+        continue;
+      }
+    } else {
+      if (!guessed_omega) {
+        float sum = 0.0;
+        for (int i = 0; i < total_count; i++) sum += former_omega[i];
+        guessed_omega = sum / total_count;
+        std::cout << "guessed_omega:" << guessed_omega << std::endl;
+      }
     }
+    // 这里对得到的角速度进行检查，因为测试的时候会出现角速度的档位切换的情况，所以要看一下是否切换了档位
+    if (abs(target_list.front().ekf_x()[7] - guessed_omega) > 0.6)  //得到的omega超出阈值
+    { 
+      std::cout<<"omaga may be changed,detecting...";
+      is_checking_omega = true;
+    }
+    if (is_checking_omega) {
+      if (omega_recent_count < omaga_recent_total) {
+        recent_omega[omega_recent_count] = target_list.front().ekf_x()[7];
+        omega_recent_count++;
+        continue;
+      } else {
+        float sum = 0.0;
+        for (int i = 0; i < omaga_recent_total; i++) sum += recent_omega[i];
+        sum = sum / omaga_recent_total;
+        if (abs(sum - guessed_omega) > 0.5)  //omega超出阈值，发生突变，重新计算guessed_omega
+        {
+          current_count = 0;
+          guessed_omega = 0.0;
+          for (int i = 0; i < total_count; i++) former_omega[i] = 0.0;
+          std::cout << "omega changed, reseting guessed_omega..." << std::endl;
+          continue;
+        }
+        else
+        {
+          //没有出现问题 ，可以继续根据原来的方案射击
+          is_checking_omega = false;
+          omega_recent_count = 0;
+        }
+      }
+    }
+
+    //现在，我们已经得到的预测的当前角速度，可以进行下一步了。
+    if (guessed_omega < 5.0)  // 低速档
+    {
+      //直接使用task_1的代码
+      auto_aim::Armor armor = armors.front();  //只跟随第一个装甲板
+      // Solver计算armor的位置
+      q = gimbal.q(t);               //获取当前时间戳下云台的姿态
+      solver.set_R_gimbal2world(q);  // 使用从C板获取的四元数来对solver计算的世界坐标加以修正
+      solver.solve(armor);
+      //计算pitch和yaw
+      float yaw_target = armor.ypd_in_world.x();
+      float pitch_target = -armor.ypd_in_world.y();
+
+      /*****************上面代码与task_1基本相同************/
+      // 计算云台的合适朝向
+      auto pos_xyz = armor.xyz_in_world;  // 装甲板的中心位置
+      tools::Trajectory trajectory(   //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定炮口处的z值为0
+      gimbal.state().bullet_speed, sqrt(pos_xyz.x() * pos_xyz.x() + pos_xyz.y() * pos_xyz.y()), pos_xyz.z());
+      if (trajectory.unsolvable)  //当前距离无法射击
+      {
+        // 无法射击也要去调节云台的朝向，因为云台的yaw必须对准，pitch指向装甲板中心的话，误差倒不大
+        send_command(yaw_target, pitch_target);
+        std::cout << "to far to reach" << std::endl;
+        continue;
+      }
+      pitch_target = -trajectory.pitch;  //更新pitch_target
+      // 检查是否符合射击条件
+      nlohmann::json data;
+      data["d_pitch"] = gimbal.state().pitch - pitch_target;
+      data["d_yaw"] = gimbal.state().yaw - yaw_target;
+      data["gimbal_pitch"] = gimbal.state().pitch;
+      data["gimbal_yaw"] = gimbal.state().yaw;
+
+      plotter.plot(data);
+
+      if (
+        abs(gimbal.state().pitch - pitch_target) <
+          0.005 &&  //射击条件这里其实也不太清楚，目前限制为当前状态与目标状态的yaw与pitch
+        abs(gimbal.state().yaw - yaw_target) < 0.005)  //相差在0.005rad之内，之后肯定需要调
+      {
+        // 符合射击条件，发送射击指令
+        pitch_target += 0.008;
+        yaw_target -= 0.005;
+        send_command(yaw_target, pitch_target, true);
+        send_command(yaw_target, pitch_target, false);
+        // send_command(yaw_target, pitch_target, false);
+        std::cout << "fire" << std::endl;
+        // 等待一段时间，然后重新开始循环
+        std::this_thread::sleep_for(1500ms);
+        continue;
+      }
+      send_command(yaw_target, pitch_target);
+      // 计算并输出omega (注意：此时的omega 的误差会比较大，我们加一个平均)
+      nlohmann::json data;
+      data["predict_omega"] = guessed_omega * 0.7 + target_list.front().ekf_x()[7] * 0.3;
+      plotter.plot(data);
+    } else if (guessed_omega >= 5.0)  //中高速档
+    {
+      //直接使用原来的代码
+      if (!pTarget)  //第一次检测到装甲板时，创建Target对象
+        pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+      pTarget->predict(t);          //传入时间戳
+      pTarget->update(best_armor);  //更新Target对象
+      //   pTarget->update(armors.front());
+
+      // 未检测到装甲板时，pTarget为NULL，代码不能继续执行，而是选择等待
+      if (!pTarget) continue;
+
+      if (pTarget->diverged())  //模型出现了发散，必须重新创建Target对象进行拟合
+      {
+        std::cout << "The model is diverged...restarting" << std::endl;
+        delete pTarget;
+        send_command(best_armor.ypd_in_world[0], best_armor.ypd_in_world[1]);
+        pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+        continue;
+      }
+
+      if (!pTarget->convergened()) continue;  //模型还未收敛，继续等待
+      //模型已经收敛
+      std::cout << "The model is converged!" << std::endl;
+      // 先获取当下云台中心与旋转中心水平连线的角度
+      auto rotation_C_info = pTarget->ekf_x();
+      /*
+      x vx y vy z vz a w r l h
+      a: angle
+      w: angular velocity
+      l: r2 - r1
+      h: z2 - z1
+    */
+      // 使用plotter绘制向云台发送的控制信息
+      nlohmann::json data;
+      data["predict_omega"] = pTarget->ekf_x()[7];
+      plotter.plot(data);
+      //
+      auto yaw_target = atan2(rotation_C_info[2], rotation_C_info[0]);
+      auto target_List = pTarget->armor_xyza_list();
+      /*
+        x y z a
+        x,y,z:向对于世界坐标系原点
+        a:转动角度，以世界坐标系x轴为基准，顺时针为负，单位为弧度
+    */
+      //遍历每一个装甲板，检查目前是否适合射击,可以便选择射击
+      for (int armor_id = 0; armor_id < target_List.size(); armor_id++) {
+        // 计算弹丸击打到预测位置所需要的时间
+        double time_to_shoot;
+        time_to_shoot =
+          (tools::limit_rad(yaw_target) - tools::limit_rad(target_List[armor_id][3])) /
+          rotation_C_info[7];
+        if (time_to_shoot < 0)
+          time_to_shoot +=
+            (2 * M_PI) /
+            abs(
+              rotation_C_info
+                [7]);  //这个地方是考虑到了：时间有可能为负，在这种情况下，旋转的角速度也可能是负的
+        // 计算到预测时间后，装甲板的位置
+        pTarget->predict(time_to_shoot);
+        auto predict_target = pTarget->armor_xyza_list()[armor_id];
+        pTarget->predict(t);  // 回退为原来的时间
+        // 先检查一下预测的装甲板位置是否在yaw_target附近
+        if (abs(tools::limit_rad(predict_target[3]) - yaw_target) >= 0.1)  //设置检测阈值为0.1rad
+          continue;                                                        //不符合要求
+        // 计算打击所需要的时间，判断是否可以击打
+        tools::Trajectory trajectory(
+          gimbal.state().bullet_speed,
+          sqrt(predict_target[0] * predict_target[0] + predict_target[1] * predict_target[1]),
+          predict_target
+            [2]);  //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定炮口处的z值为0
+        if (trajectory.unsolvable) continue;
+        if (abs(trajectory.fly_time - time_to_shoot) >= 0.05)
+          continue;  //设置阈值为0.05s,转动到目标位置所需要的时间与预测飞行时间相差过大认为无法击打
+        // 可以击打，发送指令,对着装甲板的预测位置击打（这会导致云台有着轻微的持续转动）
+        send_command(predict_target[3], trajectory.pitch, true);
+        pTarget->predict(t);                 // 更新预测状态
+        std::this_thread::sleep_for(500ms);  // 延时500ms，等待云台稳定
+        continue;
+      }
+    } else  //如果出现其他情况，肯定是说明出了问题，需要重新计算guessd_omega
+    {
+      current_count = 0;
+      guessed_omega = 0.0;
+      for (int i = 0; i < total_count; i++) former_omega[i] = 0.0;
+      continue;
+    }
+    // }
+    // /****************section2***** */
+    // if (!pTarget)  //第一次检测到装甲板时，创建Target对象
+    //   pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+    // pTarget->predict(t);          //传入时间戳
+    // pTarget->update(best_armor);  //更新Target对象
+    // //   pTarget->update(armors.front());
+    // nlohmann::json data_tmp1;
+    // // data_tmp1["armor_info_l_t_x"]=best_armor.left.top.x;
+    // // data_tmp1["armor_info_l_t_y"]=best_armor.left.top.y;
+    // data_tmp1["armor_info_l_t_x"] = best_armor.ypd_in_world.x();
+    // data_tmp1["armor_info_l_t_y"] = best_armor.ypd_in_world.y();
+    // plotter.plot(data_tmp1);
+
+    // // 未检测到装甲板时，pTarget为NULL，代码不能继续执行，而是选择等待
+    // if (!pTarget) continue;
+
+    // if (pTarget->diverged())  //模型出现了发散，必须重新创建Target对象进行拟合
+    // {
+    //   std::cout << "The model is diverged...restarting" << std::endl;
+    //   delete pTarget;
+    //   send_command(best_armor.ypd_in_world[0], best_armor.ypd_in_world[1]);
+    //   pTarget = new auto_aim::Target(best_armor, t, 0.2, 4, Eigen::VectorXd::Constant(11, 1.0));
+    //   continue;
+    // }
+
+    // if (!pTarget->convergened()) continue;  //模型还未收敛，继续等待
+    // //模型已经收敛
+
+    // // 先获取当下云台中心与旋转中心水平连线的角度
+    // auto rotation_C_info = pTarget->ekf_x();
+    // /*
+    //   x vx y vy z vz a w r l h
+    //   a: angle
+    //   w: angular velocity
+    //   l: r2 - r1
+    //   h: z2 - z1
+    // */
+    // // 使用plotter绘制向云台发送的控制信息
+    // nlohmann::json data;
+    // data["predict_omega"] = pTarget->ekf_x()[7];
+    // plotter.plot(data);
+    // //
+    // auto yaw_target = atan2(rotation_C_info[2], rotation_C_info[0]);
+    // auto target_List = pTarget->armor_xyza_list();
+    // /*
+    //     x y z a
+    //     x,y,z:向对于世界坐标系原点
+    //     a:转动角度，以世界坐标系x轴为基准，顺时针为负，单位为弧度
+    // */
+    // //遍历每一个装甲板，检查目前是否适合射击,可以便选择射击
+    // for (int armor_id = 0; armor_id < target_List.size(); armor_id++) {
+    //   // 计算弹丸击打到预测位置所需要的时间
+    //   double time_to_shoot;
+    //   time_to_shoot = (tools::limit_rad(yaw_target) - tools::limit_rad(target_List[armor_id][3])) /
+    //                   rotation_C_info[7];
+    //   if (time_to_shoot < 0)
+    //     time_to_shoot +=
+    //       (2 * M_PI) /
+    //       abs(
+    //         rotation_C_info
+    //           [7]);  //这个地方是考虑到了：时间有可能为负，在这种情况下，旋转的角速度也可能是负的
+    //   // 计算到预测时间后，装甲板的位置
+    //   pTarget->predict(time_to_shoot);
+    //   auto predict_target = pTarget->armor_xyza_list()[armor_id];
+    //   pTarget->predict(t);  // 回退为原来的时间
+    //   // 先检查一下预测的装甲板位置是否在yaw_target附近
+    //   if (abs(tools::limit_rad(predict_target[3]) - yaw_target) >= 0.1)  //设置检测阈值为0.1rad
+    //     continue;                                                        //不符合要求
+    //   // 计算打击所需要的时间，判断是否可以击打
+    //   tools::Trajectory trajectory(
+    //     gimbal.state().bullet_speed,
+    //     sqrt(predict_target[0] * predict_target[0] + predict_target[1] * predict_target[1]),
+    //     predict_target
+    //       [2]);  //备注：这一行可能会出错的地方：我们认为pos_xyz.z()是对应的目标与跑口的相对高度，但实际上我们并不难肯定炮口处的z值为0
+    //   if (trajectory.unsolvable) continue;
+    //   if (abs(trajectory.fly_time - time_to_shoot) >= 0.05)
+    //     continue;  //设置阈值为0.05s,转动到目标位置所需要的时间与预测飞行时间相差过大认为无法击打
+    //   // 可以击打，发送指令,对着装甲板的预测位置击打（这会导致云台有着轻微的持续转动）
+    //   send_command(predict_target[3], trajectory.pitch, true);
+    //   pTarget->predict(t);                 // 更新预测状态
+    //   std::this_thread::sleep_for(500ms);  // 延时500ms，等待云台稳定
+    //   continue;
+    // }
   }
+
+  if (pTarget) delete pTarget;
 
   return 0;
 }
