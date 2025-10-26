@@ -24,7 +24,7 @@ auto_aim::Armor make_fake_armor(
   using namespace auto_aim;
 
   // -----------------------------
-  // 1️⃣ 构造装甲板基本形状
+  //  构造装甲板基本形状
   // -----------------------------
   std::vector<cv::Point2f> keypoints = {
     cv::Point2f(-50, -25), cv::Point2f(50, -25), cv::Point2f(50, 25), cv::Point2f(-50, 25)};
@@ -33,7 +33,7 @@ auto_aim::Armor make_fake_armor(
   Armor armor(0, 1, 1.0f, box, keypoints);  // color=blue, id=1, conf=1.0
 
   // -----------------------------
-  // 2️⃣ 理想圆周轨迹 (绕 z 轴)
+  //  理想圆周轨迹 (绕 z 轴)
   // -----------------------------
   double ax = center_x - radius * std::cos(angle);
   double ay = center_y - radius * std::sin(angle);
@@ -41,14 +41,14 @@ auto_aim::Armor make_fake_armor(
   armor.xyz_in_world = Eigen::Vector3d(ax, ay, az);
 
   // -----------------------------
-  // 3️⃣ 真实装甲姿态（切线方向）
+  //  真实装甲姿态（切线方向）
   // 装甲面法线始终朝向切线方向
   // -----------------------------
   double armor_yaw = angle + M_PI / 2.0;        // 切向方向
   if (armor_yaw > M_PI) armor_yaw -= 2 * M_PI;  // wrap 到 [-π, π]
 
   // -----------------------------
-  // 4️⃣ 添加测量噪声
+  //  添加测量噪声
   // -----------------------------
   std::normal_distribution<double> noise_yaw(0.0, 0.005);    // ≈0.3°
   std::normal_distribution<double> noise_pitch(0.0, 0.003);  // ≈0.17°
@@ -59,7 +59,7 @@ auto_aim::Armor make_fake_armor(
   double noisy_dist = std::sqrt(ax * ax + ay * ay + az * az) + noise_dist(rng);
 
   // -----------------------------
-  // 5️⃣ 写入 Armor 对象
+  //  写入 Armor 对象
   // -----------------------------
   armor.ypd_in_world = Eigen::Vector3d(noisy_yaw, noisy_pitch, noisy_dist);
   armor.ypr_in_world = Eigen::Vector3d(armor_yaw, 0.0, 0.0);

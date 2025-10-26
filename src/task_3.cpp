@@ -91,9 +91,7 @@ int main(int argc, char * argv[])
 
   // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
   // 修改时，需要同时修改另外两个文件的对应函数
-  tools::PID pid_yaw(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-  tools::PID pid_pitch(0.01f, 5.0f, 0.0f, 0.5f, 5.0f, 0.2f, true);
-  auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
+  auto send_command = [&gimbal, &plotter](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
     gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
@@ -112,7 +110,7 @@ int main(int argc, char * argv[])
     2、之后对omega进行判断，
     如果是在低转速(3-5rad),选择使用task_2中的代码进行射击（yaw或许可以微调一下）
     如果是在中高转速下，>5rad,选择使用我们最开始的模型进行射击(pitch需要调整)
-    3、无论是在什么转速下，都使用aimer提供的omega进行输出。由于aimer当低转速时效果不好，故而可以考虑加一个平均和一定的噪声
+    3、无论是在什么转速下，都使用aimer提供的omega进行输出。
   */
 
   int current_count = 0;

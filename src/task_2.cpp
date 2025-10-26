@@ -92,27 +92,16 @@ int main(int argc, char * argv[])
 
   // 这是发送并且记录控制指令的环节，这个地方常用，而且很容易出问题，故而使用lambda表达式单独列出
   // 修改时，需要同时修改另外两个文件的对应函数
-  tools::PID pid_yaw(0.0f, 1.5f, 0.3f, 0.0f, 3.0f, 0.1f, true);
-  tools::PID pid_pitch(0.0f, 1.5f, 0.3f, 0.0f, 3.0f, 0.1f, true);
-  auto send_command = [&gimbal, &plotter, &pid_yaw, &pid_pitch](
+  auto send_command = [&gimbal, &plotter](
                         double yaw_target, double pitch_target, bool fire = false) -> void {
-    // if (pitch_target > 0.35)
-    //   pitch_target = 0.35;
-    // else if (pitch_target < -0.35)
-    //   pitch_target = -0.35;
     //使用PID控制算法发送指令
     auto state = gimbal.state();  // 当前云台状态
-    float yaw_output = pid_yaw.calc(yaw_target, state.yaw);
-    float pitch_output = pid_pitch.calc(pitch_target, state.pitch);
-    //  gimbal.send(true, fire, /*state.yaw +*/ yaw_output, /*state.pitch + */pitch_output);
     gimbal.send(true, fire, yaw_target, pitch_target);
     // 使用plotter绘制向云台发送的控制信息
     nlohmann::json data;
-    // data["yaw"] = state.yaw + yaw_output;
-    // data["pitch"] = state.pitch +  pitch_output;
     data["yaw"] = yaw_target;
     data["pitch"] = pitch_target;
-
+    
     plotter.plot(data);
   };
 
